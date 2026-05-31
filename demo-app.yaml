@@ -24,7 +24,7 @@ spec:
     spec:
       containers:
       - name: nginx
-        image: nginxdemos/hello:plain
+        image: nginxdemos/hello:0.3
         ports:
         - containerPort: 80
         resources:
