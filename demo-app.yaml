@@ -1,0 +1,89 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: demo-apps
+  labels:
+    kubernetes.io/metadata.name: demo-apps
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: simpel-web
+  namespace: demo-apps
+  labels:
+    app: simpel-web
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: simpel-web
+  template:
+    metadata:
+      labels:
+        app: simpel-web
+    spec:
+      containers:
+      - name: nginx
+        image: nginxdemos/hello:plain
+        ports:
+        - containerPort: 80
+        resources:
+          requests:
+            cpu: "50m"
+            memory: "32Mi"
+          limits:
+            cpu: "100m"
+            memory: "64Mi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: simpel-web-service
+  namespace: demo-apps
+spec:
+  ports:
+  - port: 80
+    targetPort: 80
+  selector:
+    app: simpel-web
+  type: ClusterIP
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: simpel-web-ingress
+  namespace: demo-apps
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+spec:
+  rules:
+  - host: demo.local
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: simpel-web-service
+            port:
+              number: 80
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: simpel-web-hpa
+  namespace: demo-apps
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: simpel-web
+  minReplicas: 2
+  maxReplicas: 5
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 50
